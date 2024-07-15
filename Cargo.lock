@@ -2619,6 +2619,7 @@ version = "0.1.0"
 name = "my_library"
 version = "0.1.0"
 dependencies = [
+ "bevy",
  "criterion",
  "rand",
  "rand_pcg",

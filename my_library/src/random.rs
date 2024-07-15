@@ -1,5 +1,5 @@
+use rand::distributions::uniform::SampleRange;
 use rand::{prelude::StdRng, Rng, SeedableRng};
-use std::ops::Range;
 
 pub struct RandomNumberGenerator {
     rng: StdRng,
@@ -18,8 +18,18 @@ impl RandomNumberGenerator {
         }
     }
 
-    pub fn range(&mut self, range: Range<u32>) -> u32 {
+    pub fn range<T>(&mut self, range: impl SampleRange<T>) -> T
+    where
+        T: rand::distributions::uniform::SampleUniform + PartialOrd,
+    {
         self.rng.gen_range(range)
+    }
+
+    pub fn next<T>(&mut self) -> T
+    where
+        rand::distributions::Standard: rand::prelude::Distribution<T>,
+    {
+        self.rng.gen()
     }
 }
 
@@ -55,5 +65,23 @@ mod test {
                 rng.1.range(u32::MIN..u32::MAX),
             );
         });
+    }
+
+    #[test]
+    fn test_next_types() {
+        let mut rng = RandomNumberGenerator::new();
+        let _: i32 = rng.next();
+        let _ = rng.next::<f32>();
+    }
+
+    #[test]
+    fn test_float() {
+        let mut rng = RandomNumberGenerator::new();
+        for _ in 0..1000 {
+            let n = rng.range(-5000.0f32..5000.0f32);
+            assert!(n.is_finite());
+            assert!(n > -5000.0);
+            assert!(n < 5000.0);
+        }
     }
 }

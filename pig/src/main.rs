@@ -108,13 +108,7 @@ fn player(
                 clear_die(&hand_query, &mut commands);
                 state.set(GamePhase::Cpu);
             } else {
-                spawn_die(
-                    &hand_query,
-                    &mut commands,
-                    &assets,
-                    new_roll as usize,
-                    Color::WHITE,
-                );
+                spawn_die(&hand_query, &mut commands, &assets, new_roll, Color::WHITE);
             }
         }
         if ui.button("Pass - Keep Hand Score").clicked() {
@@ -141,18 +135,12 @@ fn cpu(
     if timer.0.just_finished() {
         let hand_total: usize = hand_query.iter().map(|(_, ts, _)| ts.index + 1).sum();
         if hand_total < 20 && scores.cpu + hand_total < 100 {
-            let new_roll = rng.0.range(1..7);
+            let new_roll = rng.0.range(1..=6);
             if new_roll == 1 {
                 clear_die(&hand_query, &mut commands);
                 state.set(GamePhase::Player);
             } else {
-                spawn_die(
-                    &hand_query,
-                    &mut commands,
-                    &assets,
-                    new_roll as usize,
-                    Color::BLUE,
-                );
+                spawn_die(&hand_query, &mut commands, &assets, new_roll, Color::BLUE);
             }
         } else {
             scores.cpu += hand_total;

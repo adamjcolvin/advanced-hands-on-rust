@@ -20,3 +20,4 @@ harness = false
 default = ["pcg"]
 pcg = ["rand_pcg"]
 xorshift = ["rand_xorshift"]
+locking = []

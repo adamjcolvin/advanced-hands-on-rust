@@ -1,2 +1,3 @@
 ## Pig Game
-![Pig Game](https://github.com/user-attachments/assets/f623fc2b-8a5d-4aa2-bd19-80894576b95d)
+
+![pig](https://github.com/user-attachments/assets/d31ca12c-f08c-42e0-842b-52307ab18ffd)

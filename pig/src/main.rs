@@ -1,13 +1,20 @@
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
-use my_library::{Random, RandomNumberGenerator};
+use my_library::*;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Default, States)]
 enum GamePhase {
     #[default]
+    MainMenu,
+    Start,
     Player,
     Cpu,
+    End,
+    GameOver,
 }
+
+#[derive(Component)]
+pub struct GameElement;
 
 #[derive(Resource)]
 struct GameAssets {
@@ -26,12 +33,17 @@ struct HandDie;
 #[derive(Resource)]
 struct HandTimer(Timer);
 
+#[derive(Resource)]
+struct FinalScore(Scores);
+
 fn setup(
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     mut commands: Commands,
 ) {
-    commands.spawn(Camera2dBundle::default());
+    commands
+        .spawn(Camera2dBundle::default())
+        .insert(GameElement);
     let atlas = TextureAtlas::from_grid(
         asset_server.load("dice.png"),
         Vec2::new(52.0, 52.0),
@@ -72,7 +84,8 @@ fn spawn_die(
             },
             ..default()
         })
-        .insert(HandDie);
+        .insert(HandDie)
+        .insert(GameElement);
 }
 
 fn clear_die(
@@ -148,15 +161,70 @@ fn cpu(
     }
 }
 
+fn start_game(mut state: ResMut<NextState<GamePhase>>) {
+    state.set(GamePhase::Player);
+}
+
+fn end_game(mut state: ResMut<NextState<GamePhase>>, scores: Res<Scores>, mut commands: Commands) {
+    commands.insert_resource(FinalScore(*scores));
+    state.set(GamePhase::GameOver);
+}
+
+fn check_game_over(mut state: ResMut<NextState<GamePhase>>, scores: Res<Scores>) {
+    if scores.cpu >= 100 || scores.player >= 100 {
+        state.set(GamePhase::End);
+    }
+}
+
+fn display_final_score(scores: Res<FinalScore>, mut egui_context: EguiContexts) {
+    egui::Window::new("Total Scores").show(egui_context.ctx_mut(), |ui| {
+        ui.label(&format!("Player: {}", scores.0.player));
+        ui.label(&format!("CPU: {}", scores.0.cpu));
+        if scores.0.player < scores.0.cpu {
+            ui.label("CPU is the winner!");
+        } else {
+            ui.label("Player is the winner!");
+        }
+    });
+}
+
 fn main() {
-    App::new()
-        .add_plugins(DefaultPlugins)
-        .add_plugins(EguiPlugin)
-        .add_plugins(Random)
-        .add_systems(Startup, setup)
-        .add_state::<GamePhase>()
-        .add_systems(Update, display_score)
-        .add_systems(Update, player.run_if(in_state(GamePhase::Player)))
-        .add_systems(Update, cpu.run_if(in_state(GamePhase::Cpu)))
-        .run()
+    let mut app = App::new();
+
+    add_phase!(app, GamePhase, GamePhase::Start,
+      start => [ setup ], run => [ start_game ], exit => []
+    );
+
+    add_phase!(app, GamePhase, GamePhase::Player,
+      start => [], run => [ player, check_game_over, display_score ], exit => []
+    );
+
+    add_phase!(app, GamePhase, GamePhase::Cpu,
+      start => [], run => [ cpu, check_game_over, display_score ], exit => []
+    );
+
+    add_phase!(app, GamePhase, GamePhase::End,
+      start => [], run => [ end_game ], exit => [ cleanup::<GameElement> ]
+    );
+
+    add_phase!(app, GamePhase, GamePhase::GameOver,
+      start => [], run => [ display_final_score ], exit => []
+    );
+
+    app.add_plugins(DefaultPlugins.set(WindowPlugin {
+        primary_window: Some(Window {
+            title: "Pig".to_string(),
+            resolution: bevy::window::WindowResolution::new(1024.0, 768.0),
+            ..default()
+        }),
+        ..default()
+    }))
+    .add_plugins(GameStatePlugin::new(
+        GamePhase::MainMenu,
+        GamePhase::Start,
+        GamePhase::GameOver,
+    ))
+    .add_plugins(EguiPlugin)
+    .add_plugins(Random)
+    .run()
 }

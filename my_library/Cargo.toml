@@ -9,15 +9,15 @@ rand_pcg = { version = "0.3", optional = true }
 rand_xorshift = { version = "0.3", optional = true }
 bevy = "0.12"
 
-[dev-dependencies]
-criterion = { version = "0.5.1", features = ["html_reports"] }
-
-[[bench]]
-name = "random"
-harness = false
-
 [features]
 default = ["pcg"]
 pcg = ["rand_pcg"]
 xorshift = ["rand_xorshift"]
 locking = []
+
+[dev-dependencies]
+criterion = "0.5.1"
+
+[[bench]]
+name = "random"
+harness = false
